@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mars Base Layout Prototype</title>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #c1440e;
+            margin-bottom: 20px;
+        }
+
+        .game-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .grid-container {
+            border: 2px solid #c1440e;
+            background-color: #e8d0c0;
+            display: inline-block;
+            position: relative; 
+        }
+
+        .grid-row {
+            display: flex;
+        }
+
+        .grid-cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #888;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #e8d0c0;
+            position: relative;
+        }
+
+        .grid-cell.stack-zone {
+            background-color: #ffd7b5;
+        }
+
+        .grid-cell.hovering {
+            background-color: rgba(100, 255, 100, 0.3);
+        }
+
+        .grid-cell.invalid {
+            background-color: rgba(255, 100, 100, 0.3);
+        }
+
+        .building-palette {
+            background-color: #d9d9d9;
+            padding: 15px;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .building-option {
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #888;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .building-option:hover {
+            background-color: #f0f0f0;
+        }
+
+        .building {
+            position: absolute;
+            background-color: #2196F3;
+            border: 2px solid #0b7dda;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            user-select: none;
+            z-index: 1;
+            box-sizing: border-box; 
+        }
+
+        .building.CPU {
+            background-color: #2196F3;
+            border-color: #0b7dda;
+        }
+
+        .building.Memory {
+            background-color: #4CAF50;
+            border-color: #3e8e41;
+        }
+
+        .building.IO {
+            background-color: #ff9800;
+            border-color: #e68a00;
+        }
+        
+        .stacked-indicator {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background-color: white;
+            color: black;
+            font-size: 10px;
+            padding: 1px 3px;
+            border-radius: 10px;
+            z-index: 2;
+        }
+
+        .controls {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #d9d9d9;
+            border-radius: 5px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background-color: #c1440e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #a03a0c;
+        }
+
+        .connection-line {
+            position: absolute;
+            height: 2px;
+            background-color: #333;
+            transform-origin: left center;
+            z-index: 0;
+        }
+
+        .rover {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: white;
+            border-radius: 50%;
+            border: 1px solid black;
+            z-index: 3;
+        }
+
+        .status-panel {
+            background-color: #d9d9d9;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            width: 100%;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="images/asuLogo.jpg" alt="ASU Logo" class="logo">
+    </div>
+    <h1>Mars Base Packaging Prototype</h1>
+    
+    <div class="game-container">
+        <div class="building-palette" id="building-palette">
+        </div>
+        
+        <div class="grid-container" id="grid-container">
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button id="toggle-stack-mode">Enable Stack Mode</button>
+        <button id="clear-grid">Clear Grid</button>
+        <button id="add-connection">Connect Buildings</button>
+        <button id="add-rover">Add Rover</button>
+
+        <button id="show-documentation" onclick="document.getElementById('documentation-modal').style.display='block'">
+            SA/V Documentation
+        </button>
+        </div>
+    
+    <div class="status-panel" id="status-panel">
+        <p>Welcome to Mars Base Layout. Place buildings to create your base.</p>
+    </div>
+
+    <script src="building.js"></script>
+    <script src="connection.js"></script>
+    <script src="rover.js"></script>
+    <script src="grid.js"></script>
+    <script src="gameManager.js"></script>
+    <script src="thermal.js"></script>
+    <!-- New documentation button -->
+
+  <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const game = new MarsBaseGame();
+            game.initialize();
+            
+            function gameLoop() {
+                game.grid.update();
+                requestAnimationFrame(gameLoop);
+            }
+            
+            gameLoop();
+        });
+    </script>
+
+    <div id="documentation-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-button" onclick="document.getElementById('documentation-modal').style.display='none'">&times;</span>
+        <div class="markdown-content">
+            <h1>Surface Area to Volume Ratio in Semiconductor Packaging</h1>
+            
+            <h2>Introduction</h2>
+            <p>Surface area to volume ratio (SA/V) is a critical concept in semiconductor packaging that directly impacts thermal management, electrical performance, and overall reliability. As semiconductors continue to shrink while simultaneously increasing in processing power, understanding and optimizing this ratio becomes increasingly important.</p>
+
+            <h2>Fundemental Concepts</h2>
+            <p> The surface area to volume ratio (SA/V) is exactly what it sounds like: the ratio between the outer surface area of a package to its total volume. In mathematical terms:
+                SA/V Ratio = Total Surface Area / Total Volume</p>
+
+                <h3>1. Thermal Management</h3>
+                <p>The most significant impact of SA/V ratio is on thermal management:</p>
+                <ul>
+                  <li><strong>Heat Dissipation</strong>: A higher SA/V ratio allows more surface area for heat to dissipate relative to the heat-generating volume.</li>
+                  <li><strong>Cooling Efficiency</strong>: Packages with higher SA/V ratios typically require less aggressive cooling solutions.</li>
+                  <li><strong>Temperature Gradients</strong>: Lower SA/V ratios can lead to "hot spots" where heat concentrates, potentially causing reliability issues.</li>
+                </ul>
+                
+                <h3>2. Signal Integrity</h3>
+                <ul>
+                  <li><strong>Parasitic Effects</strong>: As the SA/V ratio changes, so does the relationship between bulk properties and surface properties, which affects parasitic capacitance and inductance.</li>
+                  <li><strong>Signal Propagation</strong>: Different package geometries impact how signals travel and interact with neighboring components.</li>
+                </ul>
+                
+                <h3>3. Manufacturing Considerations</h3>
+                <ul>
+                  <li><strong>Material Usage</strong>: Higher SA/V ratios often mean more efficient use of packaging materials.</li>
+                  <li><strong>Encapsulation</strong>: The ease and effectiveness of applying protective encapsulants is affected by the package geometry.</li>
+                </ul>
+                
+                <h3>The Scaling Effect</h3>
+                <p>As semiconductor devices get smaller, an interesting phenomenon occurs: the SA/V ratio naturally increases. To illustrate:</p>
+                <ul>
+                  <li>A 10×10×10 cube has a surface area of 600 and a volume of 1000, giving an SA/V ratio of 0.6</li>
+                  <li>A 5×5×5 cube has a surface area of 150 and a volume of 125, giving an SA/V ratio of 1.2</li>
+                  <li>A 1×1×1 cube has a surface area of 6 and a volume of 1, giving an SA/V ratio of 6.0</li>
+                </ul>
+                <p>This scaling effect has been beneficial as chips have shrunk over time, naturally providing better thermal characteristics as dimensions decrease.</p>
+                
+                <h3>3D Packaging and Stacking Challenges</h3>
+                <p>Modern semiconductor packaging increasingly utilizes 3D stacking techniques, which complicate the SA/V relationship:</p>
+                <ul>
+                  <li><strong>Vertical Stacking</strong>: Adding layers increases the processing capability per unit area but decreases the SA/V ratio.</li>
+                  <li><strong>Thermal Barriers</strong>: Each interface between stacked dies creates a thermal resistance that impedes heat flow.</li>
+                  <li><strong>Heat Concentration</strong>: Inner layers in a stack have limited pathways for heat dissipation, creating challenging thermal profiles.</li>
+                </ul>
+
+                <h3>3D Packaging and Stacking Challenges</h3>
+<p>Modern semiconductor packaging increasingly utilizes 3D stacking techniques, which complicate the SA/V relationship:</p>
+<ul>
+  <li><strong>Vertical Stacking</strong>: Adding layers increases the processing capability per unit area but decreases the SA/V ratio.</li>
+  <li><strong>Thermal Barriers</strong>: Each interface between stacked dies creates a thermal resistance that impedes heat flow.</li>
+  <li><strong>Heat Concentration</strong>: Inner layers in a stack have limited pathways for heat dissipation, creating challenging thermal profiles.</li>
+</ul>
+
+<p>The following table illustrates how stacking affects the SA/V ratio:</p>
+
+<table border="1" cellpadding="5" cellspacing="0">
+  <thead>
+    <tr>
+      <th>Configuration</th>
+      <th>Dimensions</th>
+      <th>Surface Area</th>
+      <th>Volume</th>
+      <th>SA/V Ratio</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Single die</td>
+      <td>10×10×1</td>
+      <td>240</td>
+      <td>100</td>
+      <td>2.4</td>
+    </tr>
+    <tr>
+      <td>2-die stack</td>
+      <td>10×10×2</td>
+      <td>280</td>
+      <td>200</td>
+      <td>1.4</td>
+    </tr>
+    <tr>
+      <td>4-die stack</td>
+      <td>10×10×4</td>
+      <td>360</td>
+      <td>400</td>
+      <td>0.9</td>
+    </tr>
+    <tr>
+      <td>8-die stack</td>
+      <td>10×10×8</td>
+      <td>520</td>
+      <td>800</td>
+      <td>0.65</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>As shown, adding more layers reduces the SA/V ratio, making thermal management increasingly challenging.</p>
+
+<h3>Package Types and Their SA/V Characteristics</h3>
+<p>Different package types have inherently different SA/V ratios:</p>
+
+<h4>System-in-Package (SiP)</h4>
+<ul>
+  <li><strong>2D SiP</strong>: Components arranged horizontally, generally good SA/V ratio</li>
+  <li><strong>2.5D SiP</strong>: Components with interposers, moderate SA/V ratio</li>
+  <li><strong>3D SiP</strong>: Vertically stacked components, lower SA/V ratio but higher component density</li>
+</ul>
+
+<h4>System-on-Chip (SoC)</h4>
+<ul>
+  <li>Generally lower volume with moderate surface area</li>
+  <li>Often has better SA/V ratio than multi-chip packages</li>
+</ul>
+
+<h4>Multi-Chip Module (MCM)</h4>
+<ul>
+  <li>Larger footprint with multiple components</li>
+  <li>Often has lower SA/V ratio due to increased total volume</li>
+</ul>
+
+<h3>Strategies for Managing SA/V Challenges</h3>
+
+<h4>1. Advanced Thermal Interface Materials (TIMs)</h4>
+<ul>
+  <li>Higher thermal conductivity TIMs can partially compensate for poor SA/V ratios</li>
+  <li>Material innovations such as graphene and diamond-based TIMs offer significant improvements</li>
+</ul>
+
+<h4>2. Through-Silicon Vias (TSVs)</h4>
+<ul>
+  <li>Allow heat to travel vertically through stacked dies</li>
+  <li>Create thermal pathways that effectively increase the "functional" surface area</li>
+</ul>
+
+<h4>3. Integrated Heat Spreaders and Sinks</h4>
+<ul>
+  <li>Extend the effective surface area for heat dissipation</li>
+  <li>Can transform the thermal characteristics of a package with poor SA/V ratio</li>
+</ul>
+
+<h4>4. Active Cooling Solutions</h4>
+<ul>
+  <li>Microfluidic cooling channels can be integrated into packages</li>
+  <li>Allow for more aggressive thermal management in high-performance applications</li>
+</ul>
+
+<h3>Real-World Trade-offs</h3>
+<p>Package designers must balance multiple competing factors:</p>
+<ul>
+  <li><strong>Performance vs. Thermal Management</strong>: Higher performance often generates more heat</li>
+  <li><strong>Density vs. Cooling</strong>: Greater integration density typically worsens the SA/V ratio</li>
+  <li><strong>Cost vs. Thermal Solutions</strong>: Advanced cooling adds cost and complexity</li>
+</ul>
+
+<h3>Conclusion</h3>
+<p>The surface area to volume ratio is a fundamental concept in semiconductor packaging that significantly impacts thermal performance. As the industry continues to push toward smaller, more powerful, and more densely packed chips, managing the SA/V relationship becomes increasingly crucial.</p>
+
+<p>Understanding these principles allows package designers to make intelligent trade-offs and develop innovations that enable continued advancement in semiconductor technology while maintaining thermal stability and reliability.</p>
+
+<h3>References</h3>
+<ol>
+  <li>Lau, J. H. (2016). <em>3D IC Integration and Packaging</em></li>
+  <li>Tummala, R. R. (2019). <em>Fundamentals of Microsystems Packaging</em></li>
+  <li>Zhang, Y., &amp; Zhao, C. (2020). <em>Thermal Management in 3D IC Packaging</em></li>
+  <li>International Technology Roadmap for Semiconductors (ITRS)</li>
+</ol>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semiconductor Packaging Simulation Documentation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #c1440e;
+            border-bottom: 2px solid #c1440e;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2196F3;
+            margin-top: 30px;
+            border-left: 4px solid #2196F3;
+            padding-left: 10px;
+        }
+        ul {
+            padding-left: 30px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        code {
+            background-color: #f5f5f5;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+            font-size: 0.9em;
+        }
+        .intro {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .conclusion {
+            background-color: #f0f8ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Semiconductor Packaging Simulation Documentation</h1>
+    
+    <div class="intro">
+        <p>This document explains how our Mars Base simulation serves as an analogy for semiconductor packaging concepts, helping users understand the critical thermal considerations in IC design.</p>
+    </div>
+
+    <h2>Core Concept: Surface Area to Volume Ratio</h2>
+    <p>The simulation directly captures the fundamental concept of surface area to volume (SA/V) ratio that is critical in semiconductor design:</p>
+    <ul>
+        <li>Each building calculates its surface area, volume, and SA/V ratio (<code>getSurfaceArea()</code>, <code>getVolume()</code>, and <code>getSurfaceAreaToVolumeRatio()</code> in <code>building.js</code>)</li>
+        <li>Higher SA/V ratios result in better heat dissipation, which is critical for both semiconductor packages and our Mars base components</li>
+    </ul>
+
+    <h2>Thermal Management Visualization</h2>
+    <p>The thermal overlay system visually demonstrates heat buildup:</p>
+    <ul>
+        <li>Heat is represented through color gradients (green to red) based on temperature</li>
+        <li>Users can toggle the thermal map to see how their design choices affect heat distribution</li>
+        <li>Critical heat issues are highlighted with warnings, mimicking thermal design constraints in IC packaging</li>
+    </ul>
+
+    <h2>Stacking and Thermal Challenges</h2>
+    <p>The simulation illustrates 3D IC integration challenges:</p>
+    <ul>
+        <li>Designated "stack zones" allow vertical building placement, similar to 3D IC integration</li>
+        <li>Each stacking level decreases thermal efficiency (<code>stackingFactor</code> in <code>getHeatOutput()</code>)</li>
+        <li>The stack penalty directly models how thermal dissipation worsens in multi-layer semiconductor packages</li>
+        <li>Visual indicators show stack levels, helping users understand the density vs. thermal tradeoff</li>
+    </ul>
+
+    <h2>Interconnections and Network Effects</h2>
+    <p>Component connectivity affects thermal performance:</p>
+    <ul>
+        <li>Buildings can be connected, representing interconnects between semiconductor components</li>
+        <li>Connected buildings have improved thermal efficiency through network effects</li>
+        <li>This models how intelligent interconnect design can assist with thermal management in ICs</li>
+    </ul>
+
+    <h2>Processing Power and Heat Generation</h2>
+    <p>The relationship between performance and heat is clearly demonstrated:</p>
+    <ul>
+        <li>Each building has a processing value that generates heat</li>
+        <li>Higher processing generates more heat, just as higher-performance semiconductor components do</li>
+        <li>Heat accumulation is calculated based on processing, SA/V ratio, and stacking</li>
+    </ul>
+
+    <h2>Educational Documentation</h2>
+    <p>The built-in documentation (accessible via "SA/V Documentation" button) provides detailed background:</p>
+    <ul>
+        <li>Explains the fundamental SA/V concept and its importance in packaging</li>
+        <li>Provides examples of how stacking affects SA/V ratio with precise calculations</li>
+        <li>Outlines real-world packaging types and their thermal characteristics</li>
+        <li>Discusses strategies for managing thermal challenges in semiconductor design</li>
+    </ul>
+
+    <h2>User Interaction and Learning</h2>
+    <p>The interactive nature of the simulation facilitates learning:</p>
+    <ul>
+        <li>Immediate feedback shows thermal consequences of design decisions</li>
+        <li>Thermal analysis reports provide detailed metrics including average temperature and efficiency scores</li>
+        <li>Building tooltips display SA/V ratios and heat dissipation values, connecting visual elements to technical concepts</li>
+    </ul>
+
+    <div class="conclusion">
+        <p>This simulation helps users intuitively understand the critical balance between performance density and thermal management that semiconductor package designers must navigate, particularly as the industry moves toward more complex 3D integration technologies.</p>
+    </div>
+</body>
+</html>
+        </div>
+    </div>
+</div>
+</body>
+</html>
